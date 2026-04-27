@@ -1,0 +1,1837 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>魔法数独 | 神秘数字谜题</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    
+    <!-- 配置Tailwind自定义颜色和字体 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#87CEEB', // 天蓝色主题
+                        primaryLight: '#B0E0E6',
+                        primaryDark: '#4682B4',
+                        secondary: '#E6E6FA', // 浅紫色主题
+                        secondaryLight: '#F3E5F5',
+                        secondaryDark: '#9370DB',
+                        accent: '#FFFACD', // 鹅黄色主题
+                        accentLight: '#FFFFE0',
+                        accentDark: '#DAA520',
+                        gold: '#D4AF37',
+                        goldLight: '#F0E68C',
+                        parchment: '#F5F1E2',
+                        darkMagic: '#1A1409',
+                        shadowMagic: '#3A2E18',
+                        error: '#FFEEEE',
+                        success: '#E6FFEE'
+                    },
+                    fontFamily: {
+                        magic: ['Garamond', 'Georgia', 'Times New Roman', 'serif'],
+                        numbers: ['Palatino', 'Georgia', 'serif']
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .text-shadow {
+                text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            }
+            .text-shadow-gold {
+                text-shadow: 0 0 5px rgba(212, 175, 55, 0.7);
+            }
+            .text-shadow-sky {
+                text-shadow: 0 0 5px rgba(135, 206, 235, 0.7);
+            }
+            .text-shadow-purple {
+                text-shadow: 0 0 5px rgba(147, 112, 219, 0.7);
+            }
+            .text-shadow-yellow {
+                text-shadow: 0 0 5px rgba(218, 165, 32, 0.7);
+            }
+            .border-thick {
+                border-width: 2px;
+            }
+            .sky-bg {
+                background-image: url('https://picsum.photos/id/1015/1200/800');
+                background-size: cover;
+                background-position: center;
+                background-attachment: fixed;
+                position: relative;
+            }
+            .sky-bg::before {
+                content: "";
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background-color: rgba(135, 206, 235, 0.3);
+                z-index: -1;
+            }
+            .purple-bg {
+                background-image: url('https://picsum.photos/id/1039/1200/800');
+                background-size: cover;
+                background-position: center;
+                background-attachment: fixed;
+                position: relative;
+            }
+            .purple-bg::before {
+                content: "";
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background-color: rgba(230, 230, 250, 0.4);
+                z-index: -1;
+            }
+            .yellow-bg {
+                background-image: url('https://picsum.photos/id/1036/1200/800');
+                background-size: cover;
+                background-position: center;
+                background-attachment: fixed;
+                position: relative;
+            }
+            .yellow-bg::before {
+                content: "";
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background-color: rgba(255, 250, 205, 0.4);
+                z-index: -1;
+            }
+            .magic-border {
+                border-image: linear-gradient(45deg, #87CEEB, #B0E0E6, #87CEEB) 1;
+            }
+            .purple-border {
+                border-image: linear-gradient(45deg, #9370DB, #F3E5F5, #9370DB) 1;
+            }
+            .yellow-border {
+                border-image: linear-gradient(45deg, #DAA520, #FFFFE0, #DAA520) 1;
+            }
+            .cell-hover {
+                transition: all 0.2s ease;
+            }
+            .cell-hover:hover:not(.fixed-number) {
+                background-color: rgba(135, 206, 235, 0.15);
+                transform: scale(1.05);
+            }
+            .cell-hover-purple:hover:not(.fixed-number) {
+                background-color: rgba(147, 112, 219, 0.15);
+                transform: scale(1.05);
+            }
+            .cell-hover-yellow:hover:not(.fixed-number) {
+                background-color: rgba(218, 165, 32, 0.15);
+                transform: scale(1.05);
+            }
+            .bounce-in {
+                animation: bounce-in 0.5s ease forwards;
+            }
+            @keyframes bounce-in {
+                0% { transform: scale(0.8); opacity: 0; }
+                70% { transform: scale(1.1); }
+                100% { transform: scale(1); opacity: 1; }
+            }
+            .pulse {
+                animation: pulse 2s infinite;
+            }
+            @keyframes pulse {
+                0% { transform: scale(1); }
+                50% { transform: scale(1.05); }
+                100% { transform: scale(1); }
+            }
+            .color-transition {
+                transition: color 0.5s ease;
+            }
+            .celebrate {
+                animation: celebrate 1s ease-in-out infinite alternate;
+            }
+            @keyframes celebrate {
+                0% { transform: translateY(0); }
+                100% { transform: translateY(-10px); }
+            }
+            
+            /* 爱心和星星形状 */
+            .heart-circle {
+                position: relative;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+            }
+            .heart-circle::before {
+                content: '♥';
+                position: absolute;
+                font-size: 2rem;
+                color: currentColor;
+                opacity: 0.3;
+                z-index: -1;
+            }
+            .star-circle {
+                position: relative;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+            }
+            .star-circle::before {
+                content: '★';
+                position: absolute;
+                font-size: 2rem;
+                color: currentColor;
+                opacity: 0.3;
+                z-index: -1;
+            }
+            
+            /* 计时器样式 */
+            .timer {
+                background: rgba(255, 255, 255, 0.9);
+                border: 2px solid #4A90E2;
+                border-radius: 8px;
+                padding: 8px 16px;
+                font-family: 'Courier New', monospace;
+                font-weight: bold;
+                color: #333;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            }
+            
+
+            /* 排行榜样式 */
+            .leaderboard {
+                background: rgba(255, 255, 255, 0.95);
+                border: 2px solid #4A90E2;
+                border-radius: 12px;
+                padding: 16px;
+                max-height: 400px;
+                overflow-y: auto;
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+            }
+            
+            .leaderboard-header {
+                text-align: center;
+                margin-bottom: 12px;
+                padding-bottom: 8px;
+                border-bottom: 2px solid #4A90E2;
+                color: #333;
+                font-weight: bold;
+            }
+            
+            .leaderboard-item {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 6px 0;
+                border-bottom: 1px solid #eee;
+            }
+            
+            .leaderboard-item:last-child {
+                border-bottom: none;
+            }
+            
+            .leaderboard-rank {
+                font-weight: bold;
+                color: #4A90E2;
+                min-width: 24px;
+            }
+            
+            .leaderboard-time {
+                font-family: 'Courier New', monospace;
+                font-weight: bold;
+                color: #333;
+            }
+            
+            .leaderboard-difficulty {
+                padding: 2px 8px;
+                border-radius: 12px;
+                font-size: 0.8em;
+                font-weight: bold;
+            }
+            
+            .difficulty-easy {
+                background: #d4edda;
+                color: #155724;
+            }
+            
+            .difficulty-medium {
+                background: #fff3cd;
+                color: #856404;
+            }
+            
+            .difficulty-hard {
+                background: #f8d7da;
+                color: #721c24;
+            }
+            
+            /* 烟花效果 */
+            .fireworks {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                pointer-events: none;
+                z-index: 100;
+            }
+            .firework {
+                position: absolute;
+                width: 6px;
+                height: 6px;
+                background: #f00;
+                border-radius: 50%;
+                transform: translate(-50%, -50%);
+                animation: explode 2s ease-out forwards;
+            }
+            @keyframes explode {
+                0% {
+                    transform: translate(-50%, -50%) scale(1);
+                    opacity: 1;
+                }
+                100% {
+                    transform: translate(-50%, -50%) scale(0);
+                    opacity: 0;
+                }
+            }
+            .theme-button {
+                transition: all 0.3s ease;
+            }
+            .theme-button:hover {
+                transform: scale(1.1);
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            }
+            .theme-button.active {
+                transform: scale(1.15);
+                box-shadow: 0 0 15px currentColor;
+            }
+        }
+    </style>
+</head>
+<body class="bg-primary text-shadow min-h-screen font-magic relative overflow-x-hidden">
+    <!-- 烟花容器 -->
+    <div id="fireworks" class="fireworks hidden"></div>
+    
+    <!-- 排行榜模态框 -->
+    <div id="leaderboard-modal" class="fixed inset-0 bg-darkMagic/80 z-50 flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-300">
+        <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4 transform scale-95 transition-transform duration-300">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold text-primaryDark">通关排行榜</h2>
+                <button id="close-leaderboard" class="text-primaryDark/70 hover:text-primaryDark text-2xl transition-colors">
+                    <i class="fa fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="leaderboard">
+                <div class="leaderboard-header">
+                    <div class="flex justify-between">
+                        <span>排名</span>
+                        <span>用时</span>
+                        <span>难度</span>
+                    </div>
+                </div>
+                <div id="leaderboard-list" class="space-y-2">
+                    <!-- 排行榜数据将通过JavaScript动态生成 -->
+                    <div class="text-center text-gray-500 py-8">
+                        暂无记录
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-4 text-center">
+                <button id="clear-leaderboard" class="bg-red-500 text-white px-4 py-2 rounded-lg font-bold hover:bg-red-600 transition-all">
+                    清空记录
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 主容器 -->
+    <div class="container mx-auto px-4 py-8 relative z-10">
+        <!-- 标题区域 -->
+        <header class="text-center mb-4 md:mb-8 bounce-in">
+            <h1 class="text-[clamp(2.5rem,5vw,4rem)] font-bold text-gold text-shadow-gold mb-2">魔法数独</h1>
+            <p class="text-parchment/80 text-[clamp(1rem,2vw,1.25rem)] max-w-2xl mx-auto mb-4">解开古老羊皮纸上的数字谜题，展现你的智慧与洞察力</p>
+            
+
+        </header>
+
+        <!-- 主要游戏区域 -->
+        <main class="flex flex-col items-center justify-center">
+            <!-- 顶部控制栏（位于棋盘正上方） -->
+            <div class="w-full max-w-[500px] mx-auto mb-4 flex items-center gap-2 px-2">
+                <!-- 计时器 -->
+                <div class="timer text-lg md:text-xl bg-parchment/90 px-4 py-2 rounded-lg shadow-lg border border-gold/30" id="game-timer">00:00:00</div>
+                
+                <!-- 排行榜按钮 -->
+                <button id="show-leaderboard" class="bg-primaryDark text-white px-3 py-2 rounded-lg font-bold hover:bg-primaryLight transition-all text-sm">
+                    <i class="fa fa-trophy mr-1"></i>排行榜
+                </button>
+                
+                <!-- 右侧功能按钮组 -->
+                <div class="flex-1 flex justify-end gap-2">
+                    <!-- 难度选择（点击弹出选项） -->
+                    <div class="relative">
+                        <button id="difficulty-toggle" class="bg-gold/20 hover:bg-gold/40 text-darkMagic px-3 py-2 rounded-lg font-bold transition-all flex items-center gap-1">
+                            <span>难度:</span>
+                            <span id="current-difficulty">简单</span>
+                            <i class="fa fa-chevron-down text-xs"></i>
+                        </button>
+                        <!-- 难度选项下拉菜单 -->
+                        <div id="difficulty-dropdown" class="hidden absolute right-0 mt-1 bg-parchment rounded-lg shadow-xl border border-gold/50 z-50 w-32">
+                            <button data-difficulty="easy" class="difficulty-btn w-full text-left px-4 py-2 hover:bg-gold/20 transition-all active">简单</button>
+                            <button data-difficulty="medium" class="difficulty-btn w-full text-left px-4 py-2 hover:bg-gold/20 transition-all">中等</button>
+                            <button data-difficulty="hard" class="difficulty-btn w-full text-left px-4 py-2 hover:bg-gold/20 transition-all">困难</button>
+                        </div>
+                    </div>
+                    
+                    <!-- 新游戏按钮 -->
+                    <button id="new-game" class="bg-gold hover:bg-goldLight text-darkMagic px-3 py-2 rounded-lg font-bold transition-all transform hover:scale-105">
+                        <i class="fa fa-refresh"></i>
+                    </button>
+                    
+                    <!-- 魔法提示按钮 -->
+                    <button id="hint-button" class="bg-gold/20 hover:bg-gold/40 text-darkMagic px-3 py-2 rounded-lg font-bold transition-all transform hover:scale-105">
+                        <i class="fa fa-lightbulb-o"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 数独棋盘区域 -->
+            <div class="relative flex flex-col items-center">
+                
+                <!-- 立体数独棋盘 -->
+                <div class="relative">
+                    <!-- 棋盘底座阴影 -->
+                    <div class="absolute -inset-6 bg-primaryDark/30 rounded-lg blur-xl opacity-70 transform translate-y-2"></div>
+                    <!-- 棋盘底座 -->
+                    <div class="absolute -inset-4 bg-gradient-to-b from-primaryDark/20 to-primaryDark/40 rounded-lg transform translate-y-1"></div>
+                    <!-- 棋盘主体 -->
+                    <div class="relative bg-white rounded-lg p-3 md:p-6 shadow-2xl border-2 border-primaryDark transform transition-all duration-300 hover:translate-y-[-5px] hover:shadow-[0_20px_25px_-5px_rgba(0,0,0,0.2),0_10px_10px_-5px_rgba(0,0,0,0.1)]">
+                        <!-- 立体边框效果 -->
+                        <div class="border-4 border-double border-gold/30 rounded-lg p-2">
+                            <div id="sudoku-board" class="grid grid-cols-9 gap-0 w-[min(90vw,500px)] h-[min(90vw,500px)] bg-gradient-to-br from-white to-primaryLight/30">
+                                <!-- 数独单元格将通过JavaScript动态生成 -->
+                            </div>
+                        </div>
+                        
+                        <!-- 开始游戏按钮 -->
+                        <button id="start-game-btn" class="hidden absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-gold text-primaryDark px-8 py-4 rounded-lg font-bold text-xl shadow-lg hover:bg-gold/80 transition-all z-20">
+                            开始游戏
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 游戏状态显示 -->
+            <div class="w-full max-w-[500px] mx-auto mt-4 p-3 bg-parchment/70 rounded-lg shadow-lg border border-gold/30">
+                <p id="status-message" class="text-darkMagic/80 text-center">请点击【开始游戏】按钮</p>
+            </div>
+            
+            <!-- 隐藏的数字键盘，将在点击单元格时显示 -->
+            <div id="floating-keypad" class="hidden fixed bg-parchment rounded-lg p-3 shadow-2xl border-2 border-gold z-40">
+                <div class="grid grid-cols-3 gap-2">
+                    <button class="keypad-btn bg-gold/10 hover:bg-gold/30 text-darkMagic py-2 px-4 rounded text-xl transition-all">1</button>
+                    <button class="keypad-btn bg-gold/10 hover:bg-gold/30 text-darkMagic py-2 px-4 rounded text-xl transition-all">2</button>
+                    <button class="keypad-btn bg-gold/10 hover:bg-gold/30 text-darkMagic py-2 px-4 rounded text-xl transition-all">3</button>
+                    <button class="keypad-btn bg-gold/10 hover:bg-gold/30 text-darkMagic py-2 px-4 rounded text-xl transition-all">4</button>
+                    <button class="keypad-btn bg-gold/10 hover:bg-gold/30 text-darkMagic py-2 px-4 rounded text-xl transition-all">5</button>
+                    <button class="keypad-btn bg-gold/10 hover:bg-gold/30 text-darkMagic py-2 px-4 rounded text-xl transition-all">6</button>
+                    <button class="keypad-btn bg-gold/10 hover:bg-gold/30 text-darkMagic py-2 px-4 rounded text-xl transition-all">7</button>
+                    <button class="keypad-btn bg-gold/10 hover:bg-gold/30 text-darkMagic py-2 px-4 rounded text-xl transition-all">8</button>
+                    <button class="keypad-btn bg-gold/10 hover:bg-gold/30 text-darkMagic py-2 px-4 rounded text-xl transition-all">9</button>
+                </div>
+                <div class="mt-2 flex gap-2">
+                    <button id="keypad-clear" class="flex-1 bg-error/50 hover:bg-error/80 text-darkMagic font-bold py-2 rounded transition-all">
+                        <i class="fa fa-eraser"></i> 清除
+                    </button>
+                    <button id="keypad-close" class="flex-1 bg-darkMagic/10 hover:bg-darkMagic/30 text-darkMagic font-bold py-2 rounded transition-all">
+                        <i class="fa fa-times"></i> 关闭
+                    </button>
+                </div>
+            </div>
+                
+                <!-- 隐藏的数字键盘，将在点击单元格时显示 -->
+                <div id="floating-keypad" class="hidden fixed bg-parchment rounded-lg p-3 shadow-2xl border-2 border-gold z-40">
+                    <div class="grid grid-cols-3 gap-2">
+                        <button class="keypad-btn bg-gold/10 hover:bg-gold/30 text-darkMagic py-2 px-4 rounded text-xl transition-all">1</button>
+                        <button class="keypad-btn bg-gold/10 hover:bg-gold/30 text-darkMagic py-2 px-4 rounded text-xl transition-all">2</button>
+                        <button class="keypad-btn bg-gold/10 hover:bg-gold/30 text-darkMagic py-2 px-4 rounded text-xl transition-all">3</button>
+                        <button class="keypad-btn bg-gold/10 hover:bg-gold/30 text-darkMagic py-2 px-4 rounded text-xl transition-all">4</button>
+                        <button class="keypad-btn bg-gold/10 hover:bg-gold/30 text-darkMagic py-2 px-4 rounded text-xl transition-all">5</button>
+                        <button class="keypad-btn bg-gold/10 hover:bg-gold/30 text-darkMagic py-2 px-4 rounded text-xl transition-all">6</button>
+                        <button class="keypad-btn bg-gold/10 hover:bg-gold/30 text-darkMagic py-2 px-4 rounded text-xl transition-all">7</button>
+                        <button class="keypad-btn bg-gold/10 hover:bg-gold/30 text-darkMagic py-2 px-4 rounded text-xl transition-all">8</button>
+                        <button class="keypad-btn bg-gold/10 hover:bg-gold/30 text-darkMagic py-2 px-4 rounded text-xl transition-all">9</button>
+                    </div>
+                    <div class="mt-2 flex gap-2">
+                        <button id="keypad-clear" class="flex-1 bg-error/50 hover:bg-error/80 text-darkMagic font-bold py-2 rounded transition-all">
+                            <i class="fa fa-eraser"></i> 清除
+                        </button>
+                        <button id="keypad-close" class="flex-1 bg-darkMagic/10 hover:bg-darkMagic/30 text-darkMagic font-bold py-2 rounded transition-all">
+                            <i class="fa fa-times"></i> 关闭
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+        
+        <!-- 页脚 -->
+        <footer class="mt-12 text-center text-parchment/60 text-sm">
+            <p>魔法数独 &copy; 2023 - 用智慧解开神秘谜题</p>
+        </footer>
+    </div>
+
+    <!-- 规则说明模态框 -->
+    <div id="rules-modal" class="fixed inset-0 bg-darkMagic/80 z-50 flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-300">
+        <div class="bg-parchment rounded-lg p-6 max-w-md w-full mx-4 transform scale-95 transition-transform duration-300">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold text-darkMagic">数独规则</h2>
+                <button id="close-rules" class="text-darkMagic/70 hover:text-darkMagic text-2xl transition-colors">
+                    <i class="fa fa-times"></i>
+                </button>
+            </div>
+            <div class="text-darkMagic space-y-3">
+                <p>数独是一个9x9的数字谜题，目标是在每个单元格中填入1-9的数字，同时满足以下规则：</p>
+                <ul class="list-disc pl-5 space-y-2">
+                    <li>每一行必须包含1-9的所有数字，不能重复</li>
+                    <li>每一列必须包含1-9的所有数字，不能重复</li>
+                    <li>每个3x3的小九宫格必须包含1-9的所有数字，不能重复</li>
+                </ul>
+                <p>游戏开始时，棋盘上已填有部分数字，你需要填满剩余的空格。</p>
+                <p>使用键盘或屏幕数字键输入数字，方向键可以导航棋盘。</p>
+            </div>
+            <button id="close-rules-btn" class="mt-6 w-full bg-gold hover:bg-goldLight text-darkMagic font-bold py-2 px-4 rounded transition-all">
+                明白了
+            </button>
+        </div>
+    </div>
+
+    <!-- 未完成确认模态框 -->
+    <div id="incomplete-modal" class="fixed inset-0 bg-primary/90 z-50 flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-300">
+        <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4 transform scale-95 transition-transform duration-300 text-center">
+            <div class="mb-4 text-primaryDark text-4xl">
+                <i class="fa fa-exclamation-triangle"></i>
+            </div>
+            <h2 class="text-2xl font-bold text-primaryDark mb-2">谜题尚未完成</h2>
+            <p class="text-primaryDark mb-6">还有空格未填写，确定要提交答案吗？</p>
+            <div class="flex gap-3">
+                <button id="submit-anyway" class="flex-1 bg-primaryDark hover:bg-primaryLight text-white font-bold py-2 px-4 rounded transition-all transform hover:scale-105">
+                    确定提交
+                </button>
+                <button id="continue-playing" class="flex-1 bg-transparent border border-primaryDark/50 hover:border-primaryDark text-primaryDark hover:text-primaryDark font-bold py-2 px-4 rounded transition-all">
+                    继续填写
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 完成庆祝模态框 -->
+    <div id="celebration-modal" class="fixed inset-0 bg-primary/90 z-50 flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-500">
+        <div class="bg-white rounded-lg p-8 max-w-md w-full mx-4 transform scale-95 transition-transform duration-500 text-center">
+            <div class="mb-4 text-primaryDark text-5xl celebrate">
+                <i class="fa fa-trophy"></i>
+            </div>
+            <h2 class="text-3xl font-bold text-primaryDark mb-2">恭喜你！</h2>
+            <p class="text-xl text-primaryDark mb-6">你成功解开了这个魔法数独谜题！</p>
+            <p id="completion-time" class="text-primaryDark/80 mb-6">用时: <span id="time-value">00:00</span></p>
+            <button id="new-game-after-win" class="w-full bg-primaryDark hover:bg-primaryLight text-white font-bold py-3 px-4 rounded transition-all transform hover:scale-105 mb-3">
+                开始新游戏
+            </button>
+            <button id="close-celebration" class="w-full bg-transparent border border-primaryDark/50 hover:border-primaryDark text-primaryDark hover:text-primaryDark py-2 px-4 rounded transition-all">
+                关闭
+            </button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // 游戏状态变量
+            let Sudoku = {
+                board: [],          // 当前数独棋盘
+                solution: [],       // 解决方案
+                original: [],       // 初始棋盘（用于重置）
+                selectedCell: null, // 当前选中的单元格
+                difficulty: 'easy', // 默认难度
+                gameStarted: false, // 游戏是否已开始
+                startTime: null,    // 游戏开始时间
+                timerInterval: null,// 计时器
+                elapsedTime: 0,     // 已用时间（秒）
+                hasHintUsed: false, // 是否已使用提醒
+                isChecking: false,  // 是否正在检查答案
+                showUserAnswers: {} // 存储用户填写的答案，用于在检查模式下切换显示
+            };
+            
+            // 排行榜数据
+            let leaderboard = JSON.parse(localStorage.getItem('sudoku-leaderboard')) || [];
+
+            // DOM元素
+            const boardElement = document.getElementById('sudoku-board');
+            const statusMessage = document.getElementById('status-message');
+            const newGameButton = document.getElementById('new-game');
+            const difficultyButtons = document.querySelectorAll('.difficulty-btn');
+            const rulesModal = document.getElementById('rules-modal');
+            const closeRulesButton = document.getElementById('close-rules');
+            const closeRulesBtn = document.getElementById('close-rules-btn');
+            const celebrationModal = document.getElementById('celebration-modal');
+            const closeCelebrationButton = document.getElementById('close-celebration');
+            const newGameAfterWinButton = document.getElementById('new-game-after-win');
+            const timeValueElement = document.getElementById('time-value');
+            const floatingKeypad = document.getElementById('floating-keypad');
+            const keypadButtons = document.querySelectorAll('.keypad-btn');
+            const keypadClearButton = document.getElementById('keypad-clear');
+            const keypadCloseButton = document.getElementById('keypad-close');
+            const incompleteModal = document.getElementById('incomplete-modal');
+            const submitAnywayButton = document.getElementById('submit-anyway');
+            const continuePlayingButton = document.getElementById('continue-playing');
+            const themeButtons = document.querySelectorAll('.theme-button');
+            const bodyElement = document.body;
+            const gameTimer = document.getElementById('game-timer');
+            const showLeaderboardButton = document.getElementById('show-leaderboard');
+            const leaderboardModal = document.getElementById('leaderboard-modal');
+            const closeLeaderboardButton = document.getElementById('close-leaderboard');
+            const leaderboardList = document.getElementById('leaderboard-list');
+            const clearLeaderboardButton = document.getElementById('clear-leaderboard');
+
+            // 初始化数独棋盘
+            function initializeBoard() {
+                boardElement.innerHTML = '';
+                
+                for (let row = 0; row < 9; row++) {
+                    for (let col = 0; col < 9; col++) {
+                        const cell = document.createElement('div');
+                        cell.classList.add('cell', 'cell-hover', 'flex', 'items-center', 'justify-center', 'font-numbers', 'text-xl', 'md:text-2xl', 'cursor-pointer', 'border', 'border-gray-300', 'transition-all', 'relative');
+                        
+                        // 设置3x3区块的粗边框
+                        if (row % 3 === 0 && row !== 0) {
+                            cell.classList.add('border-t', 'border-t-gold', 'border-thick');
+                        }
+                        if (col % 3 === 0 && col !== 0) {
+                            cell.classList.add('border-l', 'border-l-gold', 'border-thick');
+                        }
+                        
+                        cell.dataset.row = row;
+                        cell.dataset.col = col;
+                        
+                        cell.addEventListener('click', () => {
+                            if (Sudoku.isChecking) {
+                                // 在检查模式下，点击用户填写的格子可以切换显示用户答案或正确答案
+                                if (Sudoku.original[row][col] === 0 && Sudoku.board[row][col] !== 0) {
+                                    toggleCellAnswer(row, col);
+                                }
+                            } else {
+                                selectCell(row, col);
+                            }
+                        });
+                        
+                        boardElement.appendChild(cell);
+                    }
+                }
+            }
+
+            // 选择单元格
+            function selectCell(row, col) {
+                // 如果是初始数字，不能选中
+                if (Sudoku.original[row][col] !== 0) return;
+                
+                // 清除之前的选中状态
+                if (Sudoku.selectedCell) {
+                    const prevCell = getCellElement(Sudoku.selectedCell.row, Sudoku.selectedCell.col);
+                    prevCell.classList.remove('bg-gold/20', 'ring-2', 'ring-gold');
+                }
+                
+                // 设置新的选中状态
+                Sudoku.selectedCell = { row, col };
+                const cell = getCellElement(row, col);
+                cell.classList.add('bg-gold/20', 'ring-2', 'ring-gold');
+                
+                // 如果游戏尚未开始，开始计时
+                if (!Sudoku.gameStarted) {
+                    startGame();
+                }
+                
+                // 显示浮动键盘
+                showFloatingKeypad(cell);
+            }
+            
+            // 显示浮动键盘
+            function showFloatingKeypad(cell) {
+                const rect = cell.getBoundingClientRect();
+                const boardRect = boardElement.getBoundingClientRect();
+                
+                // 计算键盘位置，确保在视窗内
+                let top = rect.bottom + 10;
+                let left = rect.left;
+                
+                // 如果键盘会超出右侧边界，调整位置
+                if (left + 200 > window.innerWidth) {
+                    left = window.innerWidth - 210;
+                }
+                
+                // 如果键盘会超出底部边界，显示在单元格上方
+                if (top + 150 > window.innerHeight) {
+                    top = rect.top - 160;
+                }
+                
+                // 设置键盘位置
+                floatingKeypad.style.top = `${top}px`;
+                floatingKeypad.style.left = `${left}px`;
+                floatingKeypad.classList.remove('hidden');
+            }
+            
+            // 隐藏浮动键盘
+            function hideFloatingKeypad() {
+                floatingKeypad.classList.add('hidden');
+            }
+
+            // 获取单元格元素
+            function getCellElement(row, col) {
+                return boardElement.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+            }
+
+            // 生成数独谜题
+            function generateSudoku(difficulty) {
+                // 创建一个完整的数独解决方案
+                Sudoku.solution = createSolution();
+                
+                // 复制解决方案作为初始棋盘
+                Sudoku.original = JSON.parse(JSON.stringify(Sudoku.solution));
+                Sudoku.board = JSON.parse(JSON.stringify(Sudoku.solution));
+                
+                // 根据难度移除数字
+                let cellsToRemove = 30; // 简单
+                if (difficulty === 'medium') cellsToRemove = 40;
+                if (difficulty === 'hard') cellsToRemove = 50;
+                
+                let removed = 0;
+                while (removed < cellsToRemove) {
+                    const row = Math.floor(Math.random() * 9);
+                    const col = Math.floor(Math.random() * 9);
+                    
+                    if (Sudoku.original[row][col] !== 0) {
+                        Sudoku.original[row][col] = 0;
+                        Sudoku.board[row][col] = 0;
+                        removed++;
+                    }
+                }
+                
+                // 更新UI
+                updateBoardUI();
+            }
+
+            // 创建数独解决方案
+            function createSolution() {
+                const board = Array(9).fill().map(() => Array(9).fill(0));
+                
+                // 递归填充数独
+                function fillBoard(row, col) {
+                    // 如果已经填到最后一行，返回成功
+                    if (row === 9) return true;
+                    
+                    // 计算下一个单元格的位置
+                    const nextRow = col === 8 ? row + 1 : row;
+                    const nextCol = col === 8 ? 0 : col + 1;
+                    
+                    // 生成1-9的随机排列
+                    const numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9].sort(() => Math.random() - 0.5);
+                    
+                    for (const num of numbers) {
+                        if (isValidMove(board, row, col, num)) {
+                            board[row][col] = num;
+                            if (fillBoard(nextRow, nextCol)) {
+                                return true;
+                            }
+                            board[row][col] = 0; // 回溯
+                        }
+                    }
+                    
+                    return false; // 没有有效的数字可以填入
+                }
+                
+                // 从(0,0)开始填充
+                fillBoard(0, 0);
+                return board;
+            }
+
+            // 检查移动是否有效
+            function isValidMove(board, row, col, num) {
+                // 检查行
+                for (let i = 0; i < 9; i++) {
+                    if (board[row][i] === num) return false;
+                }
+                
+                // 检查列
+                for (let i = 0; i < 9; i++) {
+                    if (board[i][col] === num) return false;
+                }
+                
+                // 检查3x3区块
+                const blockRow = Math.floor(row / 3) * 3;
+                const blockCol = Math.floor(col / 3) * 3;
+                
+                for (let i = 0; i < 3; i++) {
+                    for (let j = 0; j < 3; j++) {
+                        if (board[blockRow + i][blockCol + j] === num) return false;
+                    }
+                }
+                
+                return true;
+            }
+
+            // 更新棋盘UI
+            function updateBoardUI() {
+                for (let row = 0; row < 9; row++) {
+                    for (let col = 0; col < 9; col++) {
+                        const cell = getCellElement(row, col);
+                        const value = Sudoku.board[row][col];
+                        
+                        // 清空单元格内容
+                        cell.innerHTML = '';
+                        cell.classList.remove('text-darkMagic', 'text-shadow-gold', 'bg-error', 'bg-success');
+                        
+                        // 设置初始数字和玩家输入数字的样式区别
+                        if (value !== 0) {
+                            const numberSpan = document.createElement('span');
+                            numberSpan.classList.add('number-content');
+                            numberSpan.textContent = value;
+                            
+                            if (Sudoku.original[row][col] !== 0) {
+                                numberSpan.classList.add('text-darkMagic', 'font-bold');
+                            } else {
+                                numberSpan.classList.add('text-shadow-gold', 'font-bold');
+                                
+                                // 如果在检查模式下且数字正确，显示小红花
+                                if (Sudoku.isChecking && value === Sudoku.solution[row][col]) {
+                                    const flower = document.createElement('span');
+                                    flower.classList.add('success-flower', 'absolute', 'bottom-1', 'right-1', 'text-gold', 'text-xs');
+                                    flower.innerHTML = '✿';
+                                    cell.appendChild(flower);
+                                }
+                            }
+                            
+                            cell.appendChild(numberSpan);
+                        }
+                    }
+                }
+            }
+
+            // 输入数字
+            function inputNumber(num) {
+                if (!Sudoku.selectedCell) return;
+                
+                const { row, col } = Sudoku.selectedCell;
+                
+                // 不能修改初始数字
+                if (Sudoku.original[row][col] !== 0) return;
+                
+                // 更新棋盘
+                Sudoku.board[row][col] = num;
+                const cell = getCellElement(row, col);
+                
+                // 移除之前的小红花
+                const existingFlower = cell.querySelector('.success-flower');
+                if (existingFlower) {
+                    existingFlower.remove();
+                }
+                
+                // 更新UI
+                cell.classList.remove('bg-error', 'bg-success');
+                
+                // 保留数字内容
+                const numberSpan = cell.querySelector('.number-content') || document.createElement('span');
+                numberSpan.classList.add('number-content');
+                numberSpan.textContent = num;
+                numberSpan.classList.add('text-black', 'font-bold');
+                
+                // 添加统一的爱心形状和颜色
+                numberSpan.classList.add('heart-circle');
+                numberSpan.style.color = '#4A90E2'; // 统一使用蓝色
+                
+                cell.appendChild(numberSpan);
+                
+                // 在检查模式下，不进行实时验证，只在点击检查答案按钮时验证
+                
+                // 移动到下一个单元格
+                moveToNextCell();
+            }
+
+            // 清除数字
+            function clearCell() {
+                if (!Sudoku.selectedCell) return;
+                
+                const { row, col } = Sudoku.selectedCell;
+                
+                // 不能清除初始数字
+                if (Sudoku.original[row][col] !== 0) return;
+                
+                // 清除单元格
+                Sudoku.board[row][col] = 0;
+                const cell = getCellElement(row, col);
+                
+                // 移除所有内容
+                cell.innerHTML = '';
+                cell.classList.remove('bg-error', 'bg-success');
+            }
+
+            // 移动到下一个单元格
+            function moveToNextCell() {
+                if (!Sudoku.selectedCell) return;
+                
+                let { row, col } = Sudoku.selectedCell;
+                
+                // 计算下一个单元格
+                col++;
+                if (col >= 9) {
+                    col = 0;
+                    row++;
+                    if (row >= 9) {
+                        row = 0;
+                    }
+                }
+                
+                // 保存起始位置，防止无限循环
+                const startRow = row;
+                const startCol = col;
+                let found = false;
+                
+                // 寻找下一个可编辑的单元格
+                while (row < 9) {
+                    // 如果找到可编辑的单元格
+                    if (Sudoku.original[row][col] === 0) {
+                        selectCell(row, col);
+                        found = true;
+                        break;
+                    }
+                    
+                    // 移动到下一个单元格
+                    col++;
+                    if (col >= 9) {
+                        col = 0;
+                        row++;
+                        if (row >= 9) {
+                            row = 0;
+                        }
+                    }
+                    
+                    // 如果回到了起始位置，说明没有可编辑的单元格了
+                    if (row === startRow && col === startCol) {
+                        break;
+                    }
+                }
+                
+                // 如果没有找到可编辑的单元格，保持当前选中状态
+                if (!found) {
+                    // 重新选中当前单元格，保持键盘显示
+                    const currentCell = getCellElement(Sudoku.selectedCell.row, Sudoku.selectedCell.col);
+                    showFloatingKeypad(currentCell);
+                }
+            }
+
+            // 检查解决方案
+            function checkSolution() {
+                if (!Sudoku.gameStarted) return;
+                
+                // 先检查是否有空格
+                let isComplete = true;
+                for (let row = 0; row < 9; row++) {
+                    for (let col = 0; col < 9; col++) {
+                        if (Sudoku.board[row][col] === 0) {
+                            isComplete = false;
+                            break;
+                        }
+                    }
+                    if (!isComplete) break;
+                }
+                
+                // 如果未完成，显示确认弹窗
+                if (!isComplete) {
+                    showIncompleteModal();
+                    return;
+                }
+                
+                // 开始检查答案
+                performCheckSolution();
+            }
+            
+            // 执行答案检查
+            function performCheckSolution() {
+                Sudoku.isChecking = true;
+                let hasErrors = false;
+                
+                // 保存用户当前的答案
+                Sudoku.showUserAnswers = {};
+                
+                // 检查每个单元格
+                for (let row = 0; row < 9; row++) {
+                    for (let col = 0; col < 9; col++) {
+                        const cell = getCellElement(row, col);
+                        const value = Sudoku.board[row][col];
+                        
+                        // 清除之前的状态
+                        cell.classList.remove('bg-error', 'bg-success');
+                        
+                        // 移除之前的小红花
+                        const existingFlower = cell.querySelector('.success-flower');
+                        if (existingFlower) {
+                            existingFlower.remove();
+                        }
+                        
+                        // 保存用户答案用于切换显示
+                        if (Sudoku.original[row][col] === 0 && value !== 0) {
+                            const key = `${row}-${col}`;
+                            Sudoku.showUserAnswers[key] = {
+                                userValue: value,
+                                correctValue: Sudoku.solution[row][col],
+                                isShowingUser: true
+                            };
+                        }
+                        
+                        // 检查是否正确
+                        if (value !== Sudoku.solution[row][col]) {
+                            cell.classList.add('bg-error');
+                            hasErrors = true;
+                            
+                            // 错误数字保持用户输入的样式，但添加明显的错误标记
+                            const numberSpan = cell.querySelector('.number-content');
+                            if (numberSpan) {
+                                // 保持用户输入的原始样式
+                                numberSpan.classList.add('font-bold');
+                                
+                                // 添加明显的错误标记（大红色叉号）
+                                const errorMark = document.createElement('span');
+                                errorMark.classList.add('error-mark', 'absolute', 'top-1', 'right-1', 'text-red-600', 'text-sm', 'font-bold');
+                                errorMark.innerHTML = '✗';
+                                cell.appendChild(errorMark);
+                            }
+                        } else {
+                            // 正确的格子显示明显的对勾标记
+                            if (Sudoku.original[row][col] === 0) { // 只给用户填写的正确格子加标记
+                                const checkMark = document.createElement('span');
+                                checkMark.classList.add('check-mark', 'absolute', 'bottom-1', 'right-1', 'text-green-600', 'text-sm', 'font-bold');
+                                checkMark.innerHTML = '✓';
+                                cell.appendChild(checkMark);
+                            }
+                        }
+                    }
+                }
+                
+                // 更新状态消息
+                if (hasErrors) {
+                    statusMessage.textContent = '发现错误！红色背景单元格为错误答案。点击任意用户填写的格子可在"你的答案"和"正确答案"之间切换查看。';
+                    statusMessage.className = 'text-center text-red-600 mb-4 h-6 font-bold';
+                } else {
+                    // 完成游戏
+                    completeGame();
+                }
+            }
+            
+            // 显示未完成确认模态框
+            function showIncompleteModal() {
+                incompleteModal.classList.remove('opacity-0', 'pointer-events-none');
+                incompleteModal.querySelector('div').classList.remove('scale-95');
+                incompleteModal.querySelector('div').classList.add('scale-100');
+            }
+            
+            // 隐藏未完成确认模态框
+            function hideIncompleteModal() {
+                incompleteModal.classList.add('opacity-0', 'pointer-events-none');
+                incompleteModal.querySelector('div').classList.remove('scale-100');
+                incompleteModal.querySelector('div').classList.add('scale-95');
+            }
+            
+            // 切换显示用户答案或正确答案
+            function toggleCellAnswer(row, col) {
+                const key = `${row}-${col}`;
+                const cellData = Sudoku.showUserAnswers[key];
+                
+                if (cellData) {
+                    // 切换显示状态
+                    cellData.isShowingUser = !cellData.isShowingUser;
+                    
+                    // 更新UI显示
+                    const cell = getCellElement(row, col);
+                    const numberSpan = cell.querySelector('.number-content');
+                    
+                    if (numberSpan) {
+                        if (cellData.isShowingUser) {
+                            // 显示用户输入的答案
+                            numberSpan.textContent = cellData.userValue;
+                            numberSpan.classList.remove('text-green-600', 'bg-green-100');
+                            numberSpan.classList.add('text-purple-800', 'font-bold');
+                            
+                            // 移除正确答案的标记，保留错误标记
+                            const checkMark = cell.querySelector('.check-mark');
+                            if (checkMark) checkMark.remove();
+                            
+                            // 如果是错误答案，确保有错误标记
+                            if (cellData.userValue !== cellData.correctValue) {
+                                const existingErrorMark = cell.querySelector('.error-mark');
+                                if (!existingErrorMark) {
+                                    const errorMark = document.createElement('span');
+                                    errorMark.classList.add('error-mark', 'absolute', 'top-1', 'right-1', 'text-red-600', 'text-sm', 'font-bold');
+                                    errorMark.innerHTML = '✗';
+                                    cell.appendChild(errorMark);
+                                }
+                            }
+                        } else {
+                            // 显示正确答案
+                            numberSpan.textContent = cellData.correctValue;
+                            numberSpan.classList.remove('text-purple-800');
+                            numberSpan.classList.add('text-green-600', 'bg-green-100', 'font-bold');
+                            
+                            // 移除错误标记，添加正确标记
+                            const errorMark = cell.querySelector('.error-mark');
+                            if (errorMark) errorMark.remove();
+                            
+                            const existingCheckMark = cell.querySelector('.check-mark');
+                            if (!existingCheckMark) {
+                                const checkMark = document.createElement('span');
+                                checkMark.classList.add('check-mark', 'absolute', 'bottom-1', 'right-1', 'text-green-600', 'text-sm', 'font-bold');
+                                checkMark.innerHTML = '✓';
+                                cell.appendChild(checkMark);
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 完成游戏
+            function completeGame() {
+                // 停止计时器
+                stopTimer();
+                Sudoku.isChecking = false;
+                
+                // 添加到排行榜
+                addToLeaderboard(Sudoku.elapsedTime, Sudoku.difficulty);
+                
+                // 显示烟花效果
+                showFireworks();
+                
+                // 延迟显示庆祝模态框
+                setTimeout(() => {
+                    showCelebrationModal();
+                }, 2000);
+            }
+            
+            // 添加记录到排行榜
+            function addToLeaderboard(time, difficulty) {
+                const entry = {
+                    time: time,
+                    difficulty: difficulty,
+                    date: new Date().toISOString()
+                };
+                
+                leaderboard.push(entry);
+                
+                // 按时间排序（相同难度内）
+                leaderboard.sort((a, b) => {
+                    if (a.difficulty !== b.difficulty) {
+                        // 先按难度排序：简单 < 中等 < 困难
+                        const difficultyOrder = { 'easy': 0, 'medium': 1, 'hard': 2 };
+                        return difficultyOrder[a.difficulty] - difficultyOrder[b.difficulty];
+                    }
+                    // 同难度按时间升序排列
+                    return a.time - b.time;
+                });
+                
+                // 只保留每个难度前10名
+                const easyEntries = leaderboard.filter(entry => entry.difficulty === 'easy').slice(0, 10);
+                const mediumEntries = leaderboard.filter(entry => entry.difficulty === 'medium').slice(0, 10);
+                const hardEntries = leaderboard.filter(entry => entry.difficulty === 'hard').slice(0, 10);
+                
+                leaderboard = [...easyEntries, ...mediumEntries, ...hardEntries];
+                
+                // 保存到本地存储
+                localStorage.setItem('sudoku-leaderboard', JSON.stringify(leaderboard));
+            }
+            
+            // 显示排行榜
+            function showLeaderboard() {
+                leaderboardModal.classList.remove('opacity-0', 'pointer-events-none');
+                leaderboardModal.querySelector('div').classList.remove('scale-95');
+                leaderboardModal.querySelector('div').classList.add('scale-100');
+                
+                renderLeaderboard();
+            }
+            
+            // 隐藏排行榜
+            function hideLeaderboard() {
+                leaderboardModal.classList.add('opacity-0', 'pointer-events-none');
+                leaderboardModal.querySelector('div').classList.remove('scale-100');
+                leaderboardModal.querySelector('div').classList.add('scale-95');
+            }
+            
+            // 渲染排行榜
+            function renderLeaderboard() {
+                if (leaderboard.length === 0) {
+                    leaderboardList.innerHTML = `
+                        <div class="text-center text-gray-500 py-8">
+                            暂无记录
+                        </div>
+                    `;
+                    return;
+                }
+                
+                let html = '';
+                let rank = 1;
+                
+                leaderboard.forEach(entry => {
+                    const hours = Math.floor(entry.time / 3600);
+                    const minutes = Math.floor((entry.time % 3600) / 60);
+                    const seconds = entry.time % 60;
+                    const timeString = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                    
+                    const difficultyText = {
+                        'easy': '简单',
+                        'medium': '中等',
+                        'hard': '困难'
+                    }[entry.difficulty];
+                    
+                    html += `
+                        <div class="leaderboard-item">
+                            <span class="leaderboard-rank">#${rank}</span>
+                            <span class="leaderboard-time">${timeString}</span>
+                            <span class="leaderboard-difficulty difficulty-${entry.difficulty}">${difficultyText}</span>
+                        </div>
+                    `;
+                    
+                    rank++;
+                });
+                
+                leaderboardList.innerHTML = html;
+            }
+            
+            // 清空排行榜
+            function clearLeaderboard() {
+                if (confirm('确定要清空所有排行榜记录吗？')) {
+                    leaderboard = [];
+                    localStorage.removeItem('sudoku-leaderboard');
+                    renderLeaderboard();
+                }
+            }
+            
+            // 显示烟花效果
+            function showFireworks() {
+                const fireworksContainer = document.getElementById('fireworks');
+                fireworksContainer.classList.remove('hidden');
+                
+                // 创建多个烟花
+                for (let i = 0; i < 20; i++) {
+                    setTimeout(() => {
+                        createFirework();
+                    }, i * 100);
+                }
+                
+                // 2秒后隐藏烟花
+                setTimeout(() => {
+                    fireworksContainer.classList.add('hidden');
+                    fireworksContainer.innerHTML = '';
+                }, 2000);
+            }
+            
+            // 创建单个烟花
+            function createFirework() {
+                const fireworksContainer = document.getElementById('fireworks');
+                const firework = document.createElement('div');
+                firework.classList.add('firework');
+                
+                // 随机位置
+                const x = Math.random() * window.innerWidth;
+                const y = Math.random() * window.innerHeight * 0.7;
+                
+                firework.style.left = x + 'px';
+                firework.style.top = y + 'px';
+                
+                // 随机颜色
+                const colors = ['#FF69B4', '#FFD700', '#00FFFF', '#FF00FF', '#00FF00', '#FF4500'];
+                firework.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                
+                fireworksContainer.appendChild(firework);
+                
+                // 创建爆炸粒子
+                setTimeout(() => {
+                    firework.remove();
+                    createExplosion(x, y);
+                }, 500);
+            }
+            
+            // 创建爆炸效果
+            function createExplosion(x, y) {
+                const fireworksContainer = document.getElementById('fireworks');
+                const particleCount = 15;
+                
+                for (let i = 0; i < particleCount; i++) {
+                    const particle = document.createElement('div');
+                    particle.style.position = 'absolute';
+                    particle.style.width = '4px';
+                    particle.style.height = '4px';
+                    particle.style.backgroundColor = '#FFFFFF';
+                    particle.style.borderRadius = '50%';
+                    particle.style.left = x + 'px';
+                    particle.style.top = y + 'px';
+                    particle.style.pointerEvents = 'none';
+                    
+                    const angle = (i / particleCount) * Math.PI * 2;
+                    const speed = 3 + Math.random() * 3;
+                    const vx = Math.cos(angle) * speed;
+                    const vy = Math.sin(angle) * speed;
+                    
+                    particle.style.setProperty('--vx', vx + 'px');
+                    particle.style.setProperty('--vy', vy + 'px');
+                    
+                    particle.animate([
+                        { transform: 'translate(0, 0)', opacity: 1 },
+                        { transform: `translate(calc(var(--vx) * 20), calc(var(--vy) * 20))`, opacity: 0 }
+                    ], {
+                        duration: 1000,
+                        easing: 'ease-out'
+                    });
+                    
+                    fireworksContainer.appendChild(particle);
+                    
+                    setTimeout(() => {
+                        particle.remove();
+                    }, 1000);
+                }
+            }
+
+            // 开始游戏
+            function startGame() {
+                Sudoku.gameStarted = true;
+                Sudoku.startTime = new Date();
+                
+                // 启动计时器
+                startTimer();
+                
+                statusMessage.textContent = '游戏进行中...';
+            }
+
+            // 开始计时器
+            function startTimer() {
+                if (Sudoku.timerInterval) clearInterval(Sudoku.timerInterval);
+                
+                Sudoku.timerInterval = setInterval(() => {
+                    Sudoku.elapsedTime = Math.floor((new Date() - Sudoku.startTime) / 1000);
+                    updateTimerDisplay();
+                }, 1000);
+            }
+            
+            // 更新计时器显示
+            function updateTimerDisplay() {
+                const hours = Math.floor(Sudoku.elapsedTime / 3600);
+                const minutes = Math.floor((Sudoku.elapsedTime % 3600) / 60);
+                const seconds = Sudoku.elapsedTime % 60;
+                
+                const timeString = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                
+                // 更新主计时器显示
+                if (gameTimer) {
+                    gameTimer.textContent = timeString;
+                }
+                
+                // 更新完成页面的时间显示
+                if (timeValueElement) {
+                    timeValueElement.textContent = timeString;
+                }
+            }
+
+            // 停止计时器
+            function stopTimer() {
+                if (Sudoku.timerInterval) {
+                    clearInterval(Sudoku.timerInterval);
+                    Sudoku.timerInterval = null;
+                }
+            }
+
+            // 显示规则模态框
+            function showRulesModal() {
+                rulesModal.classList.remove('opacity-0', 'pointer-events-none');
+                rulesModal.querySelector('div').classList.remove('scale-95');
+                rulesModal.querySelector('div').classList.add('scale-100');
+            }
+
+            // 隐藏规则模态框
+            function hideRulesModal() {
+                rulesModal.classList.add('opacity-0', 'pointer-events-none');
+                rulesModal.querySelector('div').classList.remove('scale-100');
+                rulesModal.querySelector('div').classList.add('scale-95');
+            }
+
+            // 显示庆祝模态框
+            function showCelebrationModal() {
+                celebrationModal.classList.remove('opacity-0', 'pointer-events-none');
+                celebrationModal.querySelector('div').classList.remove('scale-95');
+                celebrationModal.querySelector('div').classList.add('scale-100');
+                
+                // 移除庆祝动画，保持静止
+                const celebrateIcon = celebrationModal.querySelector('.celebrate');
+                if (celebrateIcon) {
+                    celebrateIcon.classList.remove('celebrate');
+                }
+            }
+
+            // 隐藏庆祝模态框
+            function hideCelebrationModal() {
+                celebrationModal.classList.add('opacity-0', 'pointer-events-none');
+                celebrationModal.querySelector('div').classList.remove('scale-100');
+                celebrationModal.querySelector('div').classList.add('scale-95');
+            }
+
+            // 开始新游戏
+            function startNewGame() {
+                // 重置游戏状态
+                stopTimer();
+                Sudoku.gameStarted = false;
+                Sudoku.selectedCell = null;
+                Sudoku.elapsedTime = 0;
+                Sudoku.hasHintUsed = false;
+                Sudoku.isChecking = false;
+                Sudoku.showUserAnswers = {};
+                updateTimerDisplay();
+                
+                // 生成新的数独谜题
+                generateSudoku(Sudoku.difficulty);
+                
+                // 更新状态
+                statusMessage.textContent = '点击开始按钮开始游戏';
+                
+                // 重新启用提醒按钮
+                const hintButton = document.getElementById('hint-button');
+                if (hintButton) {
+                    hintButton.disabled = true;
+                    hintButton.classList.add('opacity-50', 'cursor-not-allowed');
+                    hintButton.classList.remove('hover:bg-gold/40', 'transform', 'hover:scale-105');
+                }
+                
+                // 显示开始游戏按钮
+                const startGameBtn = document.getElementById('start-game-btn');
+                if (startGameBtn) {
+                    startGameBtn.classList.remove('hidden');
+                }
+            }
+
+            // 事件监听器
+            newGameButton.addEventListener('click', startNewGame);
+            
+            // 开始游戏按钮事件监听
+            document.getElementById('start-game-btn').addEventListener('click', function() {
+                // 隐藏开始按钮
+                this.classList.add('hidden');
+                
+                // 开始游戏
+                startGame();
+                
+                // 启用提示按钮
+                const hintButton = document.getElementById('hint-button');
+                if (hintButton) {
+                    hintButton.disabled = false;
+                    hintButton.classList.remove('opacity-50', 'cursor-not-allowed');
+                    hintButton.classList.add('hover:bg-gold/40', 'transform', 'hover:scale-105');
+                }
+            });
+            
+            // 难度选择下拉菜单功能
+            const difficultyToggle = document.getElementById('difficulty-toggle');
+            const difficultyDropdown = document.getElementById('difficulty-dropdown');
+            const currentDifficultyDisplay = document.getElementById('current-difficulty');
+            const difficultyOptions = document.querySelectorAll('#difficulty-dropdown .difficulty-btn');
+            
+            // 切换难度下拉菜单显示/隐藏
+            difficultyToggle.addEventListener('click', function() {
+                difficultyDropdown.classList.toggle('hidden');
+            });
+            
+            // 点击难度选项
+            difficultyOptions.forEach(option => {
+                option.addEventListener('click', function() {
+                    const difficulty = this.dataset.difficulty;
+                    Sudoku.difficulty = difficulty;
+                    
+                    // 更新当前难度显示
+                    const difficultyText = {
+                        'easy': '简单',
+                        'medium': '中等',
+                        'hard': '困难'
+                    }[difficulty];
+                    currentDifficultyDisplay.textContent = difficultyText;
+                    
+                    // 更新选项的active状态
+                    difficultyOptions.forEach(opt => opt.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    // 隐藏下拉菜单
+                    difficultyDropdown.classList.add('hidden');
+                    
+                    // 如果游戏未开始，生成新的数独谜题
+                    if (!Sudoku.gameStarted) {
+                        startNewGame();
+                    }
+                });
+            });
+            
+            // 点击页面其他地方关闭下拉菜单
+            document.addEventListener('click', function(event) {
+                if (!difficultyToggle.contains(event.target) && !difficultyDropdown.contains(event.target)) {
+                    difficultyDropdown.classList.add('hidden');
+                }
+            });
+            
+            // 未完成确认模态框事件
+            submitAnywayButton.addEventListener('click', () => {
+                hideIncompleteModal();
+                performCheckSolution();
+            });
+            
+            continuePlayingButton.addEventListener('click', hideIncompleteModal);
+            
+            // 主题切换事件
+            themeButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const theme = button.dataset.theme;
+                    switchTheme(theme);
+                    
+                    // 更新按钮状态
+                    themeButtons.forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+                });
+            });
+            
+            // 排行榜事件
+            if (showLeaderboardButton) {
+                showLeaderboardButton.addEventListener('click', showLeaderboard);
+            }
+            
+            if (closeLeaderboardButton) {
+                closeLeaderboardButton.addEventListener('click', hideLeaderboard);
+            }
+            
+            if (clearLeaderboardButton) {
+                clearLeaderboardButton.addEventListener('click', clearLeaderboard);
+            }
+            
+            // 切换主题函数
+            function switchTheme(theme) {
+                // 移除所有主题类
+                bodyElement.classList.remove('sky-bg', 'purple-bg', 'yellow-bg');
+                bodyElement.classList.remove('bg-primary', 'bg-secondary', 'bg-accent');
+                
+                // 添加新主题类
+                if (theme === 'sky') {
+                    bodyElement.classList.add('sky-bg', 'bg-primary');
+                } else if (theme === 'purple') {
+                    bodyElement.classList.add('purple-bg', 'bg-secondary');
+                } else if (theme === 'yellow') {
+                    bodyElement.classList.add('yellow-bg', 'bg-accent');
+                }
+                
+                // 更新界面元素颜色
+                updateThemeColors(theme);
+                
+                // 重新渲染棋盘以应用新主题样式
+                renderBoard();
+            }
+            
+            // 更新主题颜色
+            function updateThemeColors(theme) {
+                const primaryColor = theme === 'sky' ? 'primary' : 
+                                    theme === 'purple' ? 'secondary' : 'accent';
+                const primaryDark = theme === 'sky' ? 'primaryDark' : 
+                                   theme === 'purple' ? 'secondaryDark' : 'accentDark';
+                const primaryLight = theme === 'sky' ? 'primaryLight' : 
+                                     theme === 'purple' ? 'secondaryLight' : 'accentLight';
+                
+                // 更新标题颜色
+                const title = document.querySelector('h1');
+                const subtitle = document.querySelector('header p');
+                title.className = `text-4xl md:text-5xl font-bold text-${primaryDark} mb-2 text-shadow-${theme} animate-pulse`;
+                subtitle.className = `text-${primaryDark} text-xl`;
+                
+                // 更新状态消息颜色
+                statusMessage.className = `text-center text-${primaryDark} mb-4 h-6`;
+                
+                // 更新底部信息颜色
+                const footer = document.querySelector('footer');
+                footer.className = `text-center mt-8 text-${primaryDark}/70 text-sm`;
+                const footerButtons = footer.querySelectorAll('button');
+                footerButtons.forEach(btn => {
+                    btn.className = `hover:text-${primaryDark} transition-all`;
+                });
+                
+                // 更新模态框背景
+                rulesModal.className = `fixed inset-0 bg-${primary}/90 z-50 flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-500`;
+                incompleteModal.className = `fixed inset-0 bg-${primary}/90 z-50 flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-300`;
+                celebrationModal.className = `fixed inset-0 bg-${primary}/90 z-50 flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-500`;
+                
+                // 更新浮动键盘样式
+                floatingKeypad.className = `hidden fixed bg-${primary}/95 border-2 border-${primaryDark} rounded-lg p-3 shadow-lg z-40 backdrop-blur-sm`;
+                
+                // 更新键盘按钮样式
+                keypadButtons.forEach(btn => {
+                    btn.className = `keypad-btn w-12 h-12 bg-${primaryDark} text-white rounded-lg font-bold text-xl hover:bg-${primaryLight} transition-all`;
+                });
+                
+                // 更新键盘控制按钮样式
+                keypadClearButton.className = `flex-1 h-10 bg-white/20 text-${primaryDark} rounded-lg font-bold hover:bg-white/30 transition-all`;
+                keypadCloseButton.className = `flex-1 h-10 bg-white/20 text-${primaryDark} rounded-lg font-bold hover:bg-white/30 transition-all`;
+                
+                // 更新操作按钮样式
+                newGameButton.className = `bg-${primaryDark} text-white px-6 py-2 rounded-lg font-bold hover:bg-${primaryLight} transition-all transform hover:scale-105`;
+                checkSolutionButton.className = `bg-white/30 text-${primaryDark} border border-${primaryDark} px-6 py-2 rounded-lg font-bold hover:bg-${primaryLight}/30 transition-all`;
+                
+                // 更新棋盘边框
+                boardElement.className = `grid grid-cols-9 gap-0.5 bg-${primaryDark} border-2 border-${primary} rounded-lg p-1 max-w-md mx-auto mb-6`;
+            }
+            
+            // 获取随机提示
+            function getHint() {
+                if (Sudoku.hasHintUsed || !Sudoku.gameStarted) return;
+                
+                // 找到所有空白或错误的单元格
+                const hintCandidates = [];
+                for (let row = 0; row < 9; row++) {
+                    for (let col = 0; col < 9; col++) {
+                        if (Sudoku.original[row][col] === 0) { // 只考虑用户需要填写的格子
+                            const currentValue = Sudoku.board[row][col];
+                            const correctValue = Sudoku.solution[row][col];
+                            
+                            // 如果格子为空或填写错误，加入候选
+                            if (currentValue === 0 || currentValue !== correctValue) {
+                                hintCandidates.push({ row, col, correctValue });
+                            }
+                        }
+                    }
+                }
+                
+                if (hintCandidates.length === 0) {
+                    statusMessage.textContent = '没有可用的提示！';
+                    return;
+                }
+                
+                // 随机选择一个格子
+                const randomHint = hintCandidates[Math.floor(Math.random() * hintCandidates.length)];
+                
+                // 填入正确答案
+                Sudoku.board[randomHint.row][randomHint.col] = randomHint.correctValue;
+                
+                // 更新UI
+                const cell = getCellElement(randomHint.row, randomHint.col);
+                cell.innerHTML = '';
+                
+                const numberSpan = document.createElement('span');
+                numberSpan.classList.add('number-content', 'text-shadow-gold', 'font-bold');
+                numberSpan.textContent = randomHint.correctValue;
+                cell.appendChild(numberSpan);
+                
+                // 添加特殊的提示动画效果
+                cell.classList.add('bg-gold/20', 'pulse');
+                setTimeout(() => {
+                    cell.classList.remove('pulse');
+                    if (Sudoku.isChecking) {
+                        const flower = document.createElement('span');
+                        flower.classList.add('success-flower', 'absolute', 'bottom-1', 'right-1', 'text-gold', 'text-xs');
+                        flower.innerHTML = '✿';
+                        cell.appendChild(flower);
+                    }
+                }, 2000);
+                
+                // 标记已使用提示
+                Sudoku.hasHintUsed = true;
+                
+                // 禁用提示按钮
+                const hintButton = document.getElementById('hint-button');
+                if (hintButton) {
+                    hintButton.disabled = true;
+                    hintButton.classList.add('opacity-50', 'cursor-not-allowed');
+                    hintButton.classList.remove('hover:bg-gold/40', 'transform', 'hover:scale-105');
+                }
+                
+                statusMessage.textContent = '提示已使用！获得了一个正确答案';
+                
+                // 检查是否游戏完成
+                checkCompletion();
+            }
+            
+            // 检查游戏是否完成
+            function checkCompletion() {
+                for (let row = 0; row < 9; row++) {
+                    for (let col = 0; col < 9; col++) {
+                        if (Sudoku.board[row][col] === 0 || Sudoku.board[row][col] !== Sudoku.solution[row][col]) {
+                            return false;
+                        }
+                    }
+                }
+                completeGame();
+                return true;
+            }
+            
+            // 提示按钮事件
+            const hintButton = document.getElementById('hint-button');
+            if (hintButton) {
+                hintButton.addEventListener('click', getHint);
+            }
+            
+            // 规则模态框（保留规则功能，通过其他方式触发）
+            closeRulesButton.addEventListener('click', hideRulesModal);
+            closeRulesBtn.addEventListener('click', hideRulesModal);
+            
+            // 庆祝模态框
+            closeCelebrationButton.addEventListener('click', hideCelebrationModal);
+            newGameAfterWinButton.addEventListener('click', () => {
+                hideCelebrationModal();
+                startNewGame();
+            });
+            
+            // 浮动键盘按钮
+            keypadButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    inputNumber(parseInt(button.textContent));
+                    // 输入后保持键盘显示，方便连续输入
+                });
+            });
+            
+            // 键盘清除按钮
+            keypadClearButton.addEventListener('click', () => {
+                clearCell();
+                // 清除后保持键盘显示
+            });
+            
+            // 键盘关闭按钮
+            keypadCloseButton.addEventListener('click', hideFloatingKeypad);
+            
+            // 点击页面其他地方时隐藏键盘
+            document.addEventListener('click', (e) => {
+                // 如果点击的不是键盘、键盘按钮、数独单元格
+                if (!floatingKeypad.contains(e.target) && 
+                    !e.target.classList.contains('cell') && 
+                    !e.target.closest('.cell')) {
+                    hideFloatingKeypad();
+                }
+            });
+            
+            // 阻止键盘内部点击事件冒泡
+            floatingKeypad.addEventListener('click', (e) => {
+                e.stopPropagation();
+            });
+            
+            // 键盘支持
+            document.addEventListener('keydown', (e) => {
+                // 数字键
+                if (e.key >= '1' && e.key <= '9') {
+                    inputNumber(parseInt(e.key));
+                }
+                
+                // 删除键和退格键
+                if (e.key === 'Delete' || e.key === 'Backspace') {
+                    clearCell();
+                }
+                
+                // 方向键
+                if (Sudoku.selectedCell) {
+                    let { row, col } = Sudoku.selectedCell;
+                    const originalRow = row;
+                    const originalCol = col;
+                    
+                    // 移动到新位置
+                    switch (e.key) {
+                        case 'ArrowUp':
+                            row = Math.max(0, row - 1);
+                            break;
+                        case 'ArrowDown':
+                            row = Math.min(8, row + 1);
+                            break;
+                        case 'ArrowLeft':
+                            col = Math.max(0, col - 1);
+                            break;
+                        case 'ArrowRight':
+                            col = Math.min(8, col + 1);
+                            break;
+                        default:
+                            return;
+                    }
+                    
+                    // 如果新位置是初始数字，尝试在同一行/列寻找下一个可编辑单元格
+                    if (Sudoku.original[row][col] !== 0) {
+                        let found = false;
+                        const startRow = row;
+                        const startCol = col;
+                        
+                        // 根据方向继续搜索
+                        while (true) {
+                            switch (e.key) {
+                                case 'ArrowUp':
+                                    row = Math.max(0, row - 1);
+                                    break;
+                                case 'ArrowDown':
+                                    row = Math.min(8, row + 1);
+                                    break;
+                                case 'ArrowLeft':
+                                    col = Math.max(0, col - 1);
+                                    break;
+                                case 'ArrowRight':
+                                    col = Math.min(8, col + 1);
+                                    break;
+                            }
+                            
+                            // 如果到达边界或回到起点，停止搜索
+                            if ((e.key === 'ArrowUp' && row === 0) || 
+                                (e.key === 'ArrowDown' && row === 8) || 
+                                (e.key === 'ArrowLeft' && col === 0) || 
+                                (e.key === 'ArrowRight' && col === 8) ||
+                                (row === startRow && col === startCol)) {
+                                break;
+                            }
+                            
+                            // 如果找到可编辑单元格，选中它
+                            if (Sudoku.original[row][col] === 0) {
+                                selectCell(row, col);
+                                found = true;
+                                break;
+                            }
+                        }
+                        
+                        // 如果在同一方向没有找到，尝试从原位置开始搜索整个棋盘
+                        if (!found) {
+                            // 重置为原始位置
+                            row = originalRow;
+                            col = originalCol;
+                            
+                            // 移动到下一个单元格
+                            switch (e.key) {
+                                case 'ArrowUp':
+                                    row = Math.max(0, row - 1);
+                                    break;
+                                case 'ArrowDown':
+                                    row = Math.min(8, row + 1);
+                                    break;
+                                case 'ArrowLeft':
+                                    col = Math.max(0, col - 1);
+                                    break;
+                                case 'ArrowRight':
+                                    col = Math.min(8, col + 1);
+                                    break;
+                            }
+                            
+                            // 尝试选择新位置
+                            if (Sudoku.original[row][col] === 0) {
+                                selectCell(row, col);
+                            }
+                        }
+                    } else {
+                        // 如果新位置是可编辑的，直接选中
+                        selectCell(row, col);
+                    }
+                }
+            });
+
+            // 初始化游戏
+            initializeBoard();
+            generateSudoku(Sudoku.difficulty);
+        });
+    </script>
+</body>
+</html>
